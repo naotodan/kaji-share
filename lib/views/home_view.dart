@@ -5,6 +5,7 @@ import '../viewmodels/chore_store.dart';
 import '../models/person.dart';
 import '../models/chore_record.dart';
 import '../models/chore_item.dart';
+import 'chore_form_sheet.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -67,6 +68,8 @@ class HomeView extends StatelessWidget {
             records: store.records,
             chores: store.chores,
             selectedMonth: store.selectedMonth,
+            onAddChore: () =>
+                showChoreFormSheet(context, store: store),
           ),
           const SizedBox(height: 12),
           for (final person in Person.values)
@@ -120,14 +123,17 @@ class _CalendarCard extends StatelessWidget {
   const _CalendarCard(
       {required this.records,
       required this.chores,
-      required this.selectedMonth});
+      required this.selectedMonth,
+      required this.onAddChore});
   final List<ChoreRecord> records;
   final List<ChoreItem> chores;
   final DateTime selectedMonth;
+  final VoidCallback onAddChore;
 
   static const double _dateColW = 42;
-  static const double _choreColW = 56;
+  static const double _addColW = 40;
   static const double _rowH = 38;
+  static const int _maxFitCols = 6;
 
   static const List<String> _weekdays = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -137,7 +143,6 @@ class _CalendarCard extends StatelessWidget {
     final daysInMonth =
         DateTime(selectedMonth.year, selectedMonth.month + 1, 0).day;
 
-    // day -> choreId -> persons
     final Map<int, Map<String, List<Person>>> data = {};
     for (final r in records) {
       final d = r.recordedAt.toDate();
@@ -159,24 +164,32 @@ class _CalendarCard extends StatelessWidget {
                 style:
                     TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderRow(),
-                  for (int day = 1; day <= daysInMonth; day++)
-                    Container(
-                      color: (selectedMonth.year == now.year &&
-                              selectedMonth.month == now.month &&
-                              day == now.day)
-                          ? Colors.blue.withValues(alpha: 0.06)
-                          : null,
-                      child: _buildDayRow(day, now, data),
-                    ),
-                ],
-              ),
-            ),
+            LayoutBuilder(builder: (context, constraints) {
+              // 6列以内 → 利用可能幅いっぱい、7列以上 → 固定幅でスクロール
+              final choreColW = chores.isNotEmpty && chores.length <= _maxFitCols
+                  ? (constraints.maxWidth - _dateColW - _addColW) /
+                      chores.length
+                  : 52.0;
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeaderRow(choreColW),
+                    for (int day = 1; day <= daysInMonth; day++)
+                      Container(
+                        color: (selectedMonth.year == now.year &&
+                                selectedMonth.month == now.month &&
+                                day == now.day)
+                            ? Colors.blue.withValues(alpha: 0.06)
+                            : null,
+                        child: _buildDayRow(day, now, data, choreColW),
+                      ),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -192,7 +205,7 @@ class _CalendarCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderRow() {
+  Widget _buildHeaderRow(double choreColW) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
@@ -213,7 +226,7 @@ class _CalendarCard extends StatelessWidget {
             ),
           ),
           ...chores.map((c) => Container(
-                width: _choreColW,
+                width: choreColW,
                 height: _rowH,
                 decoration: BoxDecoration(
                   border: Border(
@@ -233,12 +246,27 @@ class _CalendarCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               )),
+          // 「+」追加ボタン列
+          GestureDetector(
+            onTap: onAddChore,
+            child: Container(
+              width: _addColW,
+              height: _rowH,
+              decoration: BoxDecoration(
+                border: Border(
+                    left: BorderSide(
+                        color: Colors.grey.shade200, width: 0.5)),
+              ),
+              child: const Icon(Icons.add, size: 18, color: Colors.green),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDayRow(int day, DateTime now, Map<int, Map<String, List<Person>>> data) {
+  Widget _buildDayRow(int day, DateTime now,
+      Map<int, Map<String, List<Person>>> data, double choreColW) {
     final isToday = selectedMonth.year == now.year &&
         selectedMonth.month == now.month &&
         day == now.day;
@@ -292,18 +320,18 @@ class _CalendarCard extends StatelessWidget {
           ),
           ...chores.map((c) {
             final persons = data[day]?[c.id] ?? [];
-            return _choreCell(persons);
+            return _choreCell(persons, choreColW);
           }),
         ],
       ),
     );
   }
 
-  Widget _choreCell(List<Person> persons) {
+  Widget _choreCell(List<Person> persons, double choreColW) {
     final hasHusband = persons.contains(Person.husband);
     final hasWife = persons.contains(Person.wife);
     return Container(
-      width: _choreColW,
+      width: choreColW,
       height: _rowH,
       decoration: BoxDecoration(
         border: Border(
