@@ -184,24 +184,52 @@ class _ChoreFormSheetState extends State<_ChoreFormSheet> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
+            const Text('ポイント:', style: TextStyle(fontSize: 16)),
+            const SizedBox(height: 8),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [1, 2, 3, 4, 5].map((pt) => GestureDetector(
+                onTap: () => setState(() => _points = pt),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: _points == pt ? Colors.orange : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange,
+                      width: _points == pt ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text('$pt pt',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _points == pt ? Colors.white : Colors.orange)),
+                  ),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('ポイント:', style: TextStyle(fontSize: 16)),
-                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: _points > 1 ? () => setState(() => _points--) : null,
+                  color: Colors.orange,
+                ),
                 Text('$_points pt',
                     style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange)),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => setState(() => _points++),
+                  color: Colors.orange,
+                ),
               ],
-            ),
-            Slider(
-              value: _points.toDouble(),
-              min: 1,
-              max: 100,
-              divisions: 99,
-              activeColor: Colors.orange,
-              onChanged: (v) => setState(() => _points = v.round()),
             ),
             const SizedBox(height: 8),
             SizedBox(
