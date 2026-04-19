@@ -61,6 +61,8 @@ class HomeView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          _RecentRecordsCard(store: store),
+          const SizedBox(height: 12),
           _CalendarCard(
             records: store.records,
             chores: store.chores,
@@ -404,6 +406,106 @@ class _BreakdownCard extends StatelessWidget {
             ),
             if (i < items.length - 1) const Divider(height: 1, indent: 16),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentRecordsCard extends StatelessWidget {
+  const _RecentRecordsCard({required this.store});
+  final ChoreStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final records = store.records.take(10).toList();
+    if (records.isEmpty) return const SizedBox();
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text('最近の記録',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          const Divider(height: 1),
+          for (int i = 0; i < records.length; i++) ...[
+            _RecordRow(record: records[i], store: store),
+            if (i < records.length - 1)
+              const Divider(height: 1, indent: 16),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordRow extends StatelessWidget {
+  const _RecordRow({required this.record, required this.store});
+  final ChoreRecord record;
+  final ChoreStore store;
+
+  String get _dateLabel {
+    final now = DateTime.now();
+    final d = record.recordedAt.toDate();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    if (day == today) return '今日';
+    if (today.difference(day).inDays == 1) return '昨日';
+    return '${d.month}/${d.day}';
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('記録を削除'),
+        content: Text('「${record.choreName}」の記録を削除しますか？'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('キャンセル')),
+          TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                store.deleteRecord(record);
+              },
+              child: const Text('削除',
+                  style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = record.person == Person.husband ? Colors.blue : Colors.pink;
+    return ListTile(
+      dense: true,
+      leading: Text(record.person.icon,
+          style: const TextStyle(fontSize: 24)),
+      title: Text(record.choreName),
+      subtitle: Text(_dateLabel,
+          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('+${record.points} pt',
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.delete_outline,
+                color: Colors.red, size: 20),
+            onPressed: () => _confirmDelete(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
         ],
       ),
     );

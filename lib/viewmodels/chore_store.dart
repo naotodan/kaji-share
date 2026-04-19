@@ -100,6 +100,11 @@ class ChoreStore extends ChangeNotifier {
     _db.collection('chores').doc(chore.id!).delete();
   }
 
+  void deleteRecord(ChoreRecord record) {
+    if (record.id == null) return;
+    _db.collection('records').doc(record.id!).delete();
+  }
+
   void recordChore(ChoreItem chore, Person person, {DateTime? date}) {
     final ts = date != null ? Timestamp.fromDate(date) : Timestamp.now();
     _db.collection('records').add(
