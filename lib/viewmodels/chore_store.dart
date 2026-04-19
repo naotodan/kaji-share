@@ -62,10 +62,27 @@ class ChoreStore extends ChangeNotifier {
         .orderBy('createdAt')
         .snapshots()
         .listen((snap) {
+      if (snap.docs.isEmpty) {
+        _seedDefaultChores();
+        return;
+      }
       chores = snap.docs.map(ChoreItem.fromDoc).toList();
       notifyListeners();
     });
     _choresUnsub = sub.cancel;
+  }
+
+  void _seedDefaultChores() {
+    const defaults = [
+      ('料理', 3),
+      ('買い物', 2),
+      ('洗濯', 2),
+      ('炊飯', 1),
+      ('ごみ捨て', 1),
+    ];
+    for (final (name, points) in defaults) {
+      addChore(name, points);
+    }
   }
 
   void _listenToRecords() {
