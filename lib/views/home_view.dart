@@ -6,6 +6,7 @@ import '../models/person.dart';
 import '../models/chore_record.dart';
 import '../models/chore_item.dart';
 import 'chore_form_sheet.dart';
+import 'person_picker_sheet.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -68,8 +69,13 @@ class HomeView extends StatelessWidget {
             records: store.records,
             chores: store.chores,
             selectedMonth: store.selectedMonth,
-            onAddChore: () =>
-                showChoreFormSheet(context, store: store),
+            onAddChore: () => showChoreFormSheet(context, store: store),
+            onCellTap: (chore, date) => showPersonPickerSheet(
+              context,
+              chore: chore,
+              store: store,
+              presetDate: date,
+            ),
           ),
           const SizedBox(height: 12),
           for (final person in Person.values)
@@ -124,11 +130,13 @@ class _CalendarCard extends StatelessWidget {
       {required this.records,
       required this.chores,
       required this.selectedMonth,
-      required this.onAddChore});
+      required this.onAddChore,
+      required this.onCellTap});
   final List<ChoreRecord> records;
   final List<ChoreItem> chores;
   final DateTime selectedMonth;
   final VoidCallback onAddChore;
+  final void Function(ChoreItem chore, DateTime date) onCellTap;
 
   static const double _dateColW = 42;
   static const double _addColW = 40;
@@ -332,7 +340,12 @@ class _CalendarCard extends StatelessWidget {
           ),
           ...chores.map((c) {
             final persons = data[day]?[c.id] ?? [];
-            return _choreCell(persons, choreColW);
+            final date = DateTime(
+                selectedMonth.year, selectedMonth.month, day);
+            return InkWell(
+              onTap: () => onCellTap(c, date),
+              child: _choreCell(persons, choreColW),
+            );
           }),
         ],
       ),
