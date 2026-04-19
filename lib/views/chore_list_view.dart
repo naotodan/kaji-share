@@ -81,20 +81,44 @@ class _PersonPickerSheet extends StatefulWidget {
 
 class _PersonPickerSheetState extends State<_PersonPickerSheet> {
   bool _recorded = false;
+  DateTime _selectedDate = DateTime.now();
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(now.year, 1, 1),
+      lastDate: now,
+      locale: const Locale('ja'),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  String get _dateLabel {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected = DateTime(
+        _selectedDate.year, _selectedDate.month, _selectedDate.day);
+    if (selected == today) return '今日';
+    final diff = today.difference(selected).inDays;
+    if (diff == 1) return '昨日';
+    return '${_selectedDate.month}/${_selectedDate.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 400,
+      height: 440,
       child: Stack(
         children: [
           Column(
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
               const Text('誰がやりましたか？',
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(widget.chore.name,
                   style: const TextStyle(
                       color: Colors.grey, fontSize: 16)),
@@ -103,7 +127,35 @@ class _PersonPickerSheetState extends State<_PersonPickerSheet> {
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.orange)),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
+              // Date selector
+              GestureDetector(
+                onTap: _pickDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          size: 14, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text(_dateLabel,
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.black87)),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down,
+                          size: 16, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: Person.values
@@ -113,8 +165,16 @@ class _PersonPickerSheetState extends State<_PersonPickerSheet> {
                           child: _PersonButton(
                             person: person,
                             onTap: () {
-                              widget.store
-                                  .recordChore(widget.chore, person);
+                              final date = DateTime(
+                                _selectedDate.year,
+                                _selectedDate.month,
+                                _selectedDate.day,
+                                DateTime.now().hour,
+                                DateTime.now().minute,
+                              );
+                              widget.store.recordChore(
+                                  widget.chore, person,
+                                  date: date);
                               setState(() => _recorded = true);
                               Future.delayed(
                                   const Duration(milliseconds: 700), () {

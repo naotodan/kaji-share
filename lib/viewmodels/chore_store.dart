@@ -8,7 +8,10 @@ class ChoreStore extends ChangeNotifier {
   final _db = FirebaseFirestore.instance;
 
   List<ChoreItem> chores = [];
-  List<ChoreRecord> records = [];
+  List<ChoreRecord> _yearRecords = [];
+
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime get selectedMonth => _selectedMonth;
 
   late final void Function() _choresUnsub;
   late final void Function() _recordsUnsub;
@@ -16,6 +19,34 @@ class ChoreStore extends ChangeNotifier {
   ChoreStore() {
     _listenToChores();
     _listenToRecords();
+  }
+
+  // Records filtered to the selected month
+  List<ChoreRecord> get records => _yearRecords.where((r) {
+        final d = r.recordedAt.toDate();
+        return d.year == _selectedMonth.year && d.month == _selectedMonth.month;
+      }).toList();
+
+  bool get canGoPrevMonth {
+    final now = DateTime.now();
+    return !(_selectedMonth.year == now.year && _selectedMonth.month == 1);
+  }
+
+  bool get canGoNextMonth {
+    final now = DateTime.now();
+    return _selectedMonth.year == now.year && _selectedMonth.month < now.month;
+  }
+
+  void prevMonth() {
+    if (!canGoPrevMonth) return;
+    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+    notifyListeners();
+  }
+
+  void nextMonth() {
+    if (!canGoNextMonth) return;
+    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+    notifyListeners();
   }
 
   @override
@@ -39,15 +70,15 @@ class ChoreStore extends ChangeNotifier {
 
   void _listenToRecords() {
     final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month);
+    final startOfYear = DateTime(now.year, 1, 1);
     final sub = _db
         .collection('records')
         .where('recordedAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYear))
         .orderBy('recordedAt', descending: true)
         .snapshots()
         .listen((snap) {
-      records = snap.docs.map(ChoreRecord.fromDoc).toList();
+      _yearRecords = snap.docs.map(ChoreRecord.fromDoc).toList();
       notifyListeners();
     });
     _recordsUnsub = sub.cancel;
@@ -69,18 +100,20 @@ class ChoreStore extends ChangeNotifier {
     _db.collection('chores').doc(chore.id!).delete();
   }
 
-  void recordChore(ChoreItem chore, Person person) {
+  void recordChore(ChoreItem chore, Person person, {DateTime? date}) {
+    final ts = date != null ? Timestamp.fromDate(date) : Timestamp.now();
     _db.collection('records').add(
       ChoreRecord(
         choreId: chore.id ?? '',
         choreName: chore.name,
         points: chore.points,
         person: person,
+        recordedAt: ts,
       ).toMap(),
     );
   }
 
-  // MARK: - Computed
+  // MARK: - Computed (monthly)
 
   int pointsFor(Person person) =>
       records.where((r) => r.person == person).fold(0, (s, r) => s + r.points);
@@ -100,5 +133,25 @@ class ChoreStore extends ChangeNotifier {
         .toList();
     result.sort((a, b) => b.points.compareTo(a.points));
     return result;
+  }
+
+  // MARK: - Annual summary (current year)
+
+  List<({int month, int husbandPoints, int wifePoints})> get annualSummary {
+    final map = <int, List<int>>{};
+    for (final r in _yearRecords) {
+      final m = r.recordedAt.toDate().month;
+      map.putIfAbsent(m, () => [0, 0]);
+      if (r.person == Person.husband) {
+        map[m]![0] += r.points;
+      } else {
+        map[m]![1] += r.points;
+      }
+    }
+    return List.generate(12, (i) {
+      final m = i + 1;
+      final pts = map[m] ?? [0, 0];
+      return (month: m, husbandPoints: pts[0], wifePoints: pts[1]);
+    });
   }
 }

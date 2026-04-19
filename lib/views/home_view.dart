@@ -12,7 +12,7 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<ChoreStore>();
-    final month = DateFormat('yyyy年M月').format(DateTime.now());
+    final now = DateTime.now();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -23,12 +23,28 @@ class HomeView extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Center(
-            child: Text(month,
+          // Month navigation
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.chevron_left,
+                    color: store.canGoPrevMonth ? null : Colors.grey[300]),
+                onPressed: store.canGoPrevMonth ? store.prevMonth : null,
+              ),
+              Text(
+                DateFormat('yyyy年M月').format(store.selectedMonth),
                 style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w600)),
+                    fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              IconButton(
+                icon: Icon(Icons.chevron_right,
+                    color: store.canGoNextMonth ? null : Colors.grey[300]),
+                onPressed: store.canGoNextMonth ? store.nextMonth : null,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -45,13 +61,19 @@ class HomeView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _CalendarCard(records: store.records, chores: store.chores),
+          _CalendarCard(
+            records: store.records,
+            chores: store.chores,
+            selectedMonth: store.selectedMonth,
+          ),
           const SizedBox(height: 12),
           for (final person in Person.values)
             if (store.breakdownFor(person).isNotEmpty) ...[
               _BreakdownCard(person: person, store: store),
               const SizedBox(height: 12),
             ],
+          _AnnualSummaryCard(store: store, currentYear: now.year),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -93,24 +115,31 @@ class _PointCard extends StatelessWidget {
 }
 
 class _CalendarCard extends StatelessWidget {
-  const _CalendarCard({required this.records, required this.chores});
+  const _CalendarCard(
+      {required this.records,
+      required this.chores,
+      required this.selectedMonth});
   final List<ChoreRecord> records;
   final List<ChoreItem> chores;
+  final DateTime selectedMonth;
 
-  static const double _dateColW = 36;
+  static const double _dateColW = 42;
   static const double _choreColW = 56;
-  static const double _rowH = 32;
+  static const double _rowH = 38;
+
+  static const List<String> _weekdays = ['月', '火', '水', '木', '金', '土', '日'];
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysInMonth =
+        DateTime(selectedMonth.year, selectedMonth.month + 1, 0).day;
 
     // day -> choreId -> persons
     final Map<int, Map<String, List<Person>>> data = {};
     for (final r in records) {
       final d = r.recordedAt.toDate();
-      if (d.year == now.year && d.month == now.month) {
+      if (d.year == selectedMonth.year && d.month == selectedMonth.month) {
         data.putIfAbsent(d.day, () => {});
         data[d.day]!.putIfAbsent(r.choreId, () => []).add(r.person);
       }
@@ -125,34 +154,23 @@ class _CalendarCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('カレンダー',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
-                  _buildRow(
-                    dateWidget: _headerCell(_dateColW, '日付'),
-                    choreWidgets: chores
-                        .map((c) => _choreHeaderCell(_choreColW, c.name))
-                        .toList(),
-                    isHeader: true,
-                  ),
-                  // Day rows
+                  _buildHeaderRow(),
                   for (int day = 1; day <= daysInMonth; day++)
                     Container(
-                      color: day == now.day
+                      color: (selectedMonth.year == now.year &&
+                              selectedMonth.month == now.month &&
+                              day == now.day)
                           ? Colors.blue.withValues(alpha: 0.06)
                           : null,
-                      child: _buildRow(
-                        dateWidget: _dateCell(day, now),
-                        choreWidgets: chores.map((c) {
-                          final persons = data[day]?[c.id] ?? [];
-                          return _choreCell(_choreColW, persons);
-                        }).toList(),
-                      ),
+                      child: _buildDayRow(day, now, data),
                     ),
                 ],
               ),
@@ -172,93 +190,122 @@ class _CalendarCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRow({
-    required Widget dateWidget,
-    required List<Widget> choreWidgets,
-    bool isHeader = false,
-  }) {
+  Widget _buildHeaderRow() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border(
+            bottom: BorderSide(color: Colors.grey.shade300, width: 1.0)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: _dateColW,
+            height: _rowH,
+            child: const Center(
+              child: Text('日付',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey)),
+            ),
+          ),
+          ...chores.map((c) => Container(
+                width: _choreColW,
+                height: _rowH,
+                decoration: BoxDecoration(
+                  border: Border(
+                      left: BorderSide(
+                          color: Colors.grey.shade200, width: 0.5)),
+                ),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  c.name,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayRow(int day, DateTime now, Map<int, Map<String, List<Person>>> data) {
+    final isToday = selectedMonth.year == now.year &&
+        selectedMonth.month == now.month &&
+        day == now.day;
+    final weekdayIndex =
+        DateTime(selectedMonth.year, selectedMonth.month, day).weekday - 1;
+    final isSun = weekdayIndex == 6;
+    final isSat = weekdayIndex == 5;
+    final dateColor = isToday
+        ? Colors.blue
+        : isSun
+            ? Colors.red.shade400
+            : isSat
+                ? Colors.blue.shade300
+                : Colors.black87;
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: isHeader ? Colors.grey.shade300 : Colors.grey.shade200,
-            width: isHeader ? 1.0 : 0.5,
+            bottom:
+                BorderSide(color: Colors.grey.shade200, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: _dateColW,
+            height: _rowH,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$day',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                    color: dateColor,
+                  ),
+                ),
+                Text(
+                  _weekdays[weekdayIndex],
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: isSun
+                        ? Colors.red.shade300
+                        : isSat
+                            ? Colors.blue.shade200
+                            : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        color: isHeader ? Colors.grey.shade50 : null,
-      ),
-      child: Row(children: [dateWidget, ...choreWidgets]),
-    );
-  }
-
-  Widget _headerCell(double width, String text) {
-    return SizedBox(
-      width: width,
-      height: _rowH,
-      child: Center(
-        child: Text(text,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey)),
+          ...chores.map((c) {
+            final persons = data[day]?[c.id] ?? [];
+            return _choreCell(persons);
+          }),
+        ],
       ),
     );
   }
 
-  Widget _choreHeaderCell(double width, String text) {
-    return Container(
-      width: width,
-      height: _rowH,
-      decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: Colors.grey.shade200, width: 0.5)),
-      ),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Text(
-        text,
-        style: const TextStyle(
-            fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  Widget _dateCell(int day, DateTime now) {
-    final isToday = day == now.day;
-    final weekday = DateTime(now.year, now.month, day).weekday;
-    final color = isToday
-        ? Colors.blue
-        : weekday == 7
-            ? Colors.red.shade400
-            : weekday == 6
-                ? Colors.blue.shade300
-                : Colors.black87;
-    return SizedBox(
-      width: _dateColW,
-      height: _rowH,
-      child: Center(
-        child: Text(
-          '$day',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-            color: color,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _choreCell(double width, List<Person> persons) {
+  Widget _choreCell(List<Person> persons) {
     final hasHusband = persons.contains(Person.husband);
     final hasWife = persons.contains(Person.wife);
     return Container(
-      width: width,
+      width: _choreColW,
       height: _rowH,
       decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+        border: Border(
+            left: BorderSide(color: Colors.grey.shade200, width: 0.5)),
       ),
       alignment: Alignment.center,
       child: persons.isEmpty
@@ -359,6 +406,135 @@ class _BreakdownCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _AnnualSummaryCard extends StatelessWidget {
+  const _AnnualSummaryCard({required this.store, required this.currentYear});
+  final ChoreStore store;
+  final int currentYear;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = store.annualSummary;
+    final now = DateTime.now();
+    final visibleMonths =
+        summary.where((s) => s.month <= now.month).toList();
+    final maxPts = visibleMonths.fold(0, (m, s) {
+      final max = s.husbandPoints > s.wifePoints
+          ? s.husbandPoints
+          : s.wifePoints;
+      return max > m ? max : m;
+    });
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Text('$currentYear年 年間集計',
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  // Legend row
+                  Row(
+                    children: [
+                      const SizedBox(width: 36),
+                      _dot(Colors.blue),
+                      const SizedBox(width: 4),
+                      const Text('夫',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(width: 12),
+                      _dot(Colors.pink),
+                      const SizedBox(width: 4),
+                      const Text('妻',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  for (final s in visibleMonths) ...[
+                    _MonthRow(s: s, maxPts: maxPts),
+                    const SizedBox(height: 6),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dot(Color color) => Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+}
+
+class _MonthRow extends StatelessWidget {
+  const _MonthRow({required this.s, required this.maxPts});
+  final ({int month, int husbandPoints, int wifePoints}) s;
+  final int maxPts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 32,
+          child: Text('${s.month}月',
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bar(context, Colors.blue, s.husbandPoints),
+              const SizedBox(height: 2),
+              _bar(context, Colors.pink, s.wifePoints),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bar(BuildContext context, Color color, int pts) {
+    final fraction = maxPts > 0 ? pts / maxPts : 0.0;
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: fraction,
+              backgroundColor: color.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation(color),
+              minHeight: 10,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        SizedBox(
+          width: 44,
+          child: Text('$pts pt',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontWeight: FontWeight.w500)),
+        ),
+      ],
     );
   }
 }
