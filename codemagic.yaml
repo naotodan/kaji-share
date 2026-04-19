@@ -5,16 +5,9 @@ workflows:
     environment:
       groups:
         - ios
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.danjo.kajiShare
       flutter: stable
       xcode: latest
       cocoapods: default
-      vars:
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
     scripts:
       - name: Set up keychain
         script: keychain initialize
