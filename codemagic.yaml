@@ -13,8 +13,12 @@ workflows:
         script: keychain initialize
       - name: Fetch signing files
         script: |
+          echo $APP_STORE_CONNECT_PRIVATE_KEY | base64 --decode > /tmp/AuthKey.p8
           app-store-connect fetch-signing-files com.danjo.kajiShare \
             --type IOS_APP_STORE \
+            --private-key @/tmp/AuthKey.p8 \
+            --key-id $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            --issuer-id $APP_STORE_CONNECT_ISSUER_ID \
             --create
       - name: Add certs to keychain
         script: keychain add-certificates
