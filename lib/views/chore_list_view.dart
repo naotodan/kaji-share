@@ -43,8 +43,28 @@ class _ChoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(chore.name),
-      subtitle: Text('${chore.points} pt'),
+      title: Text(chore.name,
+          style: const TextStyle(fontWeight: FontWeight.w500)),
+      subtitle: Row(
+        children: [
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.orange.shade300),
+            ),
+            child: Text(
+              '${chore.points} pt',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.orange.shade800,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
       trailing: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green,

@@ -231,19 +231,31 @@ class _CalendarCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border(
                       left: BorderSide(
-                          color: Colors.grey.shade200, width: 0.5)),
+                          color: Colors.grey.shade400, width: 0.8)),
                 ),
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  c.name,
-                  style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      c.name,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      '${c.points}pt',
+                      style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               )),
           // 「+」追加ボタン列
