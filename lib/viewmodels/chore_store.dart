@@ -122,13 +122,14 @@ class ChoreStore extends ChangeNotifier {
     _db.collection('records').doc(record.id!).delete();
   }
 
-  void recordChore(ChoreItem chore, Person person, {DateTime? date}) {
+  void recordChore(ChoreItem chore, Person person,
+      {DateTime? date, int? overridePoints}) {
     final ts = date != null ? Timestamp.fromDate(date) : Timestamp.now();
     _db.collection('records').add(
       ChoreRecord(
         choreId: chore.id ?? '',
         choreName: chore.name,
-        points: chore.points,
+        points: overridePoints ?? chore.points,
         person: person,
         recordedAt: ts,
       ).toMap(),
