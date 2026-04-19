@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "629063436734",
+    "project_id": "kajishare-e44d7",
+    "storage_bucket": "kajishare-e44d7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:629063436734:android:5a9619e99c927c3acc11ef",
+        "android_client_info": {
+          "package_name": "com.danjo.kaji_share"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMoqtRCE3NSyE3TAUMFcwOnZapUkenXvE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
