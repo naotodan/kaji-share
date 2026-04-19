@@ -210,7 +210,7 @@ class _CalendarCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         border: Border(
-            bottom: BorderSide(color: Colors.grey.shade300, width: 1.0)),
+            bottom: BorderSide(color: Colors.grey.shade500, width: 1.5)),
       ),
       child: Row(
         children: [
@@ -286,7 +286,7 @@ class _CalendarCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
             bottom:
-                BorderSide(color: Colors.grey.shade200, width: 0.5)),
+                BorderSide(color: Colors.grey.shade400, width: 0.8)),
       ),
       child: Row(
         children: [
@@ -335,7 +335,7 @@ class _CalendarCard extends StatelessWidget {
       height: _rowH,
       decoration: BoxDecoration(
         border: Border(
-            left: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+            left: BorderSide(color: Colors.grey.shade400, width: 0.8)),
       ),
       alignment: Alignment.center,
       child: persons.isEmpty

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../viewmodels/chore_store.dart';
 import 'home_view.dart';
 import 'chore_list_view.dart';
-import 'settings_view.dart';
 
 class MainTabView extends StatefulWidget {
   const MainTabView({super.key});
@@ -22,7 +21,7 @@ class _MainTabViewState extends State<MainTabView> {
       child: Scaffold(
         body: IndexedStack(
           index: _index,
-          children: const [HomeView(), ChoreListView(), SettingsView()],
+          children: const [HomeView(), ChoreListView()],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
@@ -36,10 +35,6 @@ class _MainTabViewState extends State<MainTabView> {
                 icon: Icon(Icons.check_circle_outline),
                 selectedIcon: Icon(Icons.check_circle),
                 label: '家事一覧'),
-            NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: '設定'),
           ],
         ),
       ),
